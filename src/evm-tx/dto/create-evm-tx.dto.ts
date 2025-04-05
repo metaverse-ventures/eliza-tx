@@ -1,9 +1,12 @@
 import { Address } from 'viem';
 import { SupportedChain } from 'src/_common/utils/types';
-import { IsBoolean, IsEthereumAddress, IsOptional, IsString, IsUUID ,} from '@nestjs/class-validator';
+import {
+  IsEthereumAddress,
+  IsOptional,
+  IsString,
+} from '@nestjs/class-validator';
 
 export class TransferDTO {
-
   @IsString()
   fromChain: SupportedChain;
 
@@ -18,7 +21,6 @@ export class TransferDTO {
 }
 
 export class BridgePayloadDTO {
-
   @IsString()
   fromChain: SupportedChain;
 

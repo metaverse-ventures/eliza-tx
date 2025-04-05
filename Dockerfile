@@ -9,10 +9,6 @@ RUN apt-get update && apt-get install -y python3 python3-pip make g++ && rm -rf 
 COPY package.json package-lock.json ./ 
 RUN npm ci
 
-# Copy Prisma schema and generate clients
-COPY prisma ./prisma
-RUN npm run prisma:generate
-
 # Copy the rest of the application source
 COPY . . 
 
@@ -35,12 +31,6 @@ RUN apt-get update && apt-get install -y python3 python3-pip make g++ && \
     rm -rf node_modules/@sentry/profiling-node && \
     apt-get remove -y python3 python3-pip make g++ && rm -rf /var/lib/apt/lists/*
 
-# Copy Prisma schema (without regenerating it)
-COPY prisma ./prisma
-
-# Generate Prisma client again in case it was removed during cleanup
-RUN npm run prisma:generate
-
 # Stage 3: Runner
 FROM node:20-bullseye AS runner
 WORKDIR /app
@@ -60,8 +50,6 @@ USER nestjs
 
 # Copy production dependencies
 COPY --from=production-deps --chown=nestjs:nodejs /app/node_modules ./node_modules
-COPY --from=production-deps --chown=nestjs:nodejs /app/prisma ./prisma
-COPY --from=production-deps --chown=nestjs:nodejs /app/node_modules/.prisma ./node_modules/.prisma
 
 # Copy built application from builder
 COPY --from=builder --chown=nestjs:nodejs /app/dist ./dist

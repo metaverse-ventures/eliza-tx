@@ -1,11 +1,6 @@
 import { Injectable } from '@nestjs/common';
-import {
-  BridgePayloadDTO,
-  TransferDTO,
-} from './dto/create-evm-tx.dto';
-import {
-  PrivyClient,
-} from '@privy-io/server-auth';
+import { BridgePayloadDTO, TransferDTO } from './dto/create-evm-tx.dto';
+import { PrivyClient } from '@privy-io/server-auth';
 import WalletClientService from 'src/_common/service/walletClient.service';
 import {
   createConfig,
@@ -16,10 +11,8 @@ import {
   getToken,
   getStepTransaction,
   getStatus,
-  getTokenAllowance,
   getGasRecommendation,
-  RoutesResponse,
-  getTokenBalance
+  getTokenBalance,
 } from '@lifi/sdk';
 import {
   encodeFunctionData,
@@ -33,8 +26,6 @@ import {
   zeroAddress,
 } from 'viem';
 import { approvalABI, transferABI } from 'src/_common/helper/abi';
-import { Transaction } from 'src/_common/utils/interface';
-import { PrismaService } from 'src/_common/service/prisma.service';
 import { ConfigService } from '@nestjs/config';
 import { response } from 'src/_common/helper/response';
 
@@ -45,14 +36,16 @@ export class EvmTxService {
   constructor(
     private walletClientService: WalletClientService,
     // private prismaService: PrismaService,
-    private configService: ConfigService
+    private configService: ConfigService,
   ) {
     const appId = this.configService.getOrThrow<string>('PRIVY_APP_ID');
     const appSecret = this.configService.getOrThrow<string>('PRIVY_APP_SECRET');
 
     this.privy = new PrivyClient(appId, appSecret, {
       walletApi: {
-        authorizationPrivateKey: this.configService.getOrThrow<string>('PRIVY_AUTHORIZATION_PRIVATE_KEY'),
+        authorizationPrivateKey: this.configService.getOrThrow<string>(
+          'PRIVY_AUTHORIZATION_PRIVATE_KEY',
+        ),
       },
     });
   }
@@ -72,7 +65,6 @@ export class EvmTxService {
 
   async getTokenAddress(tokenSymbol: string, chainId: number): Promise<string> {
     const token = await getToken(chainId, tokenSymbol);
-    const tokenDec = token.decimals;
     const tokenAddress = token?.address;
     return tokenAddress;
   }
@@ -101,9 +93,7 @@ export class EvmTxService {
           return receipt; // Transaction is confirmed
         }
       } catch (error) {
-        console.error(
-          `Error fetching transaction receipt: ${error.message}`,
-        );
+        console.error(`Error fetching transaction receipt: ${error.message}`);
       }
 
       console.log(
@@ -117,11 +107,7 @@ export class EvmTxService {
     );
   }
 
-
-  async transfer(
-    TransferPayload: TransferDTO,
-    authToken: string,
-  ) {
+  async transfer(TransferPayload: TransferDTO, authToken: string) {
     let nativeTransfer: boolean = null;
     if (TransferPayload.token) {
       nativeTransfer = false;
@@ -141,7 +127,6 @@ export class EvmTxService {
 
     if (!nativeTransfer) {
       try {
-
         const erc20TokenAddress = await this.getTokenAddress(
           TransferPayload.token,
           fromChain.id,
@@ -149,12 +134,24 @@ export class EvmTxService {
         const tokenDecimals = await this.getTokenDec(
           TransferPayload.token,
           fromChain.id,
-        )
-        const transferAmount = parseUnits(TransferPayload.amount, tokenDecimals);
+        );
+        const transferAmount = parseUnits(
+          TransferPayload.amount,
+          tokenDecimals,
+        );
         const inputToken = await getToken(fromChain.id, erc20TokenAddress);
-        const tokenBalance = await getTokenBalance(walletClient.account.address, inputToken);
-        if (parseInt(tokenBalance.amount.toString()) < parseInt(transferAmount.toString())) {
-          return response('FAILED', `Insufficient balance. Your balance is ${formatEther(tokenBalance.amount)}. Please fund your account and try again.`);
+        const tokenBalance = await getTokenBalance(
+          walletClient.account.address,
+          inputToken,
+        );
+        if (
+          parseInt(tokenBalance.amount.toString()) <
+          parseInt(transferAmount.toString())
+        ) {
+          return response(
+            'FAILED',
+            `Insufficient balance. Your balance is ${formatEther(tokenBalance.amount)}. Please fund your account and try again.`,
+          );
         }
         const encodedData = encodeFunctionData({
           abi: transferABI,
@@ -182,8 +179,13 @@ export class EvmTxService {
           data.hash as Hash,
         );
         console.log(data.hash);
-        return response('SUCCESS', `Transfer Transaction successful. Hash: ${data.hash as Hash}`);
-      } catch (error) { }
+        return response(
+          'SUCCESS',
+          `Transfer Transaction successful. Hash: ${data.hash as Hash}`,
+        );
+      } catch (error) {
+        console.error(error);
+      }
     } else {
       try {
         const ethValue = parseEther(TransferPayload.amount);
@@ -191,10 +193,13 @@ export class EvmTxService {
 
         const nativeBalance = await publicClient.getBalance({
           address: walletClient.account.address,
-        })
+        });
         console.log('Native balance:', nativeBalance);
         if (nativeBalance < ethValue) {
-          return response('FAILED', `Insufficient balance. Your balance is ${formatEther(nativeBalance)}. Please fund your account and try again.`);
+          return response(
+            'FAILED',
+            `Insufficient balance. Your balance is ${formatEther(nativeBalance)}. Please fund your account and try again.`,
+          );
         }
 
         const data: any = await this.privy.walletApi.ethereum.sendTransaction({
@@ -211,10 +216,12 @@ export class EvmTxService {
         await this.waitForConfirmation(
           publicClient as PublicClient,
           data.hash as Hash,
-        )
+        );
         console.log('hash: ', data.hash);
-        return response('SUCCESS', `Transfer Transaction successful. Hash: ${data.hash as Hash}`);
-
+        return response(
+          'SUCCESS',
+          `Transfer Transaction successful. Hash: ${data.hash as Hash}`,
+        );
       } catch (error) {
         console.error('Error sending transaction:', error);
       }
@@ -224,7 +231,11 @@ export class EvmTxService {
     throw new Error(`Transfer failed: ${error.message}`);
   }
 
-  async getGasSuggestion(toChainId: number, fromToken: string, fromChainId: number) {
+  async getGasSuggestion(
+    toChainId: number,
+    fromToken: string,
+    fromChainId: number,
+  ) {
     try {
       const gasSuggestion = await getGasRecommendation({
         chainId: toChainId,
@@ -238,11 +249,7 @@ export class EvmTxService {
     }
   }
 
-
-  async bridge(
-    BridgePayloadDTO: BridgePayloadDTO,
-    authToken: string,
-  ) {
+  async bridge(BridgePayloadDTO: BridgePayloadDTO, authToken: string) {
     const walletClient = await this.walletClientService.createWalletClient({
       authToken: authToken,
       chain: BridgePayloadDTO.fromChain,
@@ -275,17 +282,22 @@ export class EvmTxService {
       // providers: [evmProvider],
     });
 
-    const toChainId = this.walletClientService.chains[BridgePayloadDTO.toChain].id;
-    const fromChainId = this.walletClientService.chains[BridgePayloadDTO.fromChain].id;
+    const toChainId =
+      this.walletClientService.chains[BridgePayloadDTO.toChain].id;
+    const fromChainId =
+      this.walletClientService.chains[BridgePayloadDTO.fromChain].id;
 
-    const tokenDec = await this.getTokenDec(BridgePayloadDTO.fromToken, fromChainId);
+    const tokenDec = await this.getTokenDec(
+      BridgePayloadDTO.fromToken,
+      fromChainId,
+    );
 
     const fromAmount = parseUnits(BridgePayloadDTO.amount, tokenDec);
     const fromAmountString = fromAmount.toString();
 
-    const fromChainPublicClient = await this.walletClientService.createPublicClient(fromChainId);
+    const fromChainPublicClient =
+      await this.walletClientService.createPublicClient(fromChainId);
     // const toChainPublicClient = await this.walletClientService.createPublicClient(toChainId);
-    let routes: RoutesResponse;
 
     // if (BridgePayloadDTO.fuel) {
     //   const gasSuggestion = await this.getGasSuggestion(toChainId, BridgePayloadDTO.fromToken, fromChainId)
@@ -306,48 +318,57 @@ export class EvmTxService {
     //     console.log('No routes found. Please try again with a different token / chain combination.');
     //     return response("FAILED", `No routes for this token combination found. Please try again with a different token / chain combination.`)
     //   }
+    // Initialize routes variable
+    const routes = await getRoutes({
+      fromTokenAddress: BridgePayloadDTO.fromToken,
+      toTokenAddress: BridgePayloadDTO.toToken
+        ? BridgePayloadDTO.toToken
+        : BridgePayloadDTO.fromToken,
+      fromChainId: fromChainId,
+      toChainId: toChainId,
+      fromAmount: fromAmountString,
+      fromAddress: walletClient.account.address,
+      toAddress: BridgePayloadDTO.toAddress || walletClient.account.address,
+    });
 
-    // } else {
-      routes = await getRoutes({
-        fromTokenAddress: BridgePayloadDTO.fromToken,
-        toTokenAddress: BridgePayloadDTO.toToken ? BridgePayloadDTO.toToken : BridgePayloadDTO.fromToken,
-        fromChainId: fromChainId,
-        toChainId: toChainId,
-        fromAmount: fromAmountString,
-        fromAddress: walletClient.account.address,
-        toAddress: BridgePayloadDTO.toAddress || walletClient.account.address,
-      });
+    if (!routes.routes.length) {
+      console.log(
+        'No routes found. Please try again with a different token / chain combination.',
+      );
+      return response(
+        'FAILED',
+        `No routes for this token combination found. Please try again with a different token / chain combination.`,
+      );
+    }
 
-      if (!routes.routes.length) {
-        console.log('No routes found. Please try again with a different token / chain combination.');
-        return response("FAILED", `No routes for this token combination found. Please try again with a different token / chain combination.`)
-      }
+    const stepLength = routes.routes[0].steps.length;
 
-      const stepLength = routes.routes[0].steps.length;
+    if (stepLength > 1) {
+      // check the native balance of the wallet address on the toChainId
+      // const txStep = await getStepTransaction(routes.routes[0].steps[1])
 
-      if (stepLength > 1) {
-        // check the native balance of the wallet address on the toChainId
-        // const txStep = await getStepTransaction(routes.routes[0].steps[1])
+      // const toChainNativeBalance = await toChainPublicClient.getBalance({
+      //   address: walletClient.account.address,
+      // });
 
-        // const toChainNativeBalance = await toChainPublicClient.getBalance({
-        //   address: walletClient.account.address,
-        // });
+      // if (parseInt(toChainNativeBalance.toString()) <= parseInt(txStep.estimate.gasCosts[0].amount)) {
+      //   console.log(`It seems that this route has multiple steps and you don't have enough balance on the destination chain to fulfill the second step. Please fund your wallet on the desination chain and retry`)
+      //   return response("FAILED", `It seems that this route has multiple steps and you don't have enough balance on the destination chain to fulfill the second step. Please fund your wallet on the desination chain and retry`)
+      // }
 
-        // if (parseInt(toChainNativeBalance.toString()) <= parseInt(txStep.estimate.gasCosts[0].amount)) {
-        //   console.log(`It seems that this route has multiple steps and you don't have enough balance on the destination chain to fulfill the second step. Please fund your wallet on the desination chain and retry`)
-        //   return response("FAILED", `It seems that this route has multiple steps and you don't have enough balance on the destination chain to fulfill the second step. Please fund your wallet on the desination chain and retry`)
-        // }
-
-        console.log(`Currently there are no efficient or optimal routes available for bridging the selected tokens between these chains. Please try again later to get the best possible rates and routes.`)
-        return response("FAILED", `Currently there are no efficient or optimal routes available for bridging the selected tokens between these chains. Please try again later to get the best possible rates and routes.`)
-
-      }
+      console.log(
+        `Currently there are no efficient or optimal routes available for bridging the selected tokens between these chains. Please try again later to get the best possible rates and routes.`,
+      );
+      return response(
+        'FAILED',
+        `Currently there are no efficient or optimal routes available for bridging the selected tokens between these chains. Please try again later to get the best possible rates and routes.`,
+      );
+    }
     // }
 
     // check the number of steps in the route
     // const stepLength = routes.routes[0].steps.length;
     // console.log('routes steps length:', stepLength);
-
 
     const txStep = await getStepTransaction(routes.routes[0].steps[0]);
 
@@ -355,10 +376,12 @@ export class EvmTxService {
       address: walletClient.account.address,
     });
 
-    const tokenAddress = await this.getTokenAddress(BridgePayloadDTO.fromToken, fromChainId)
-    console.log({ tokenAddress })
+    const tokenAddress = await this.getTokenAddress(
+      BridgePayloadDTO.fromToken,
+      fromChainId,
+    );
+    console.log({ tokenAddress });
     if (tokenAddress !== zeroAddress) {
-
       const approvalAmount = txStep.estimate.fromAmount;
       const approvalAddress = txStep.estimate.approvalAddress;
       const data = encodeFunctionData({
@@ -371,14 +394,19 @@ export class EvmTxService {
         data,
         account: walletClient.account.address,
         to: txStep.action.fromToken.address,
-      })
+      });
 
-      console.log({ fromNativeBalance, gas })
+      console.log({ fromNativeBalance, gas });
 
       // Check if native balance is less than estimated gas
       if (fromNativeBalance < gas) {
-        console.error('Native balance is less than estimated gas. Transaction cannot proceed.');
-        return response("FAILED", `Not enough gas in your wallet to fund the transaction. Please fund your wallet with enough gas native tokens to perform the transactions.`)
+        console.error(
+          'Native balance is less than estimated gas. Transaction cannot proceed.',
+        );
+        return response(
+          'FAILED',
+          `Not enough gas in your wallet to fund the transaction. Please fund your wallet with enough gas native tokens to perform the transactions.`,
+        );
       }
 
       const transactionParam = {
@@ -387,19 +415,20 @@ export class EvmTxService {
         data: data,
       };
 
-      const approved: any = await this.privy.walletApi.ethereum.sendTransaction({
-        address: walletClient.account.address.toLowerCase(),
-        chainType: 'ethereum',
-        caip2: `eip155:${fromChainId}`,
-        transaction: transactionParam,
-      });
+      const approved: any = await this.privy.walletApi.ethereum.sendTransaction(
+        {
+          address: walletClient.account.address.toLowerCase(),
+          chainType: 'ethereum',
+          caip2: `eip155:${fromChainId}`,
+          transaction: transactionParam,
+        },
+      );
       console.log({ Apporvalhash: approved.hash });
 
       await this.waitForConfirmation(
         fromChainPublicClient as PublicClient,
         approved.hash as Hash,
       );
-
     }
 
     const transactionRequestWithParams = {
@@ -417,7 +446,6 @@ export class EvmTxService {
       fromChainPublicClient as PublicClient,
       transactionHash.hash as Hash,
     );
-
 
     // if (stepLength > 1) {
     //   const secondStep = await getStepTransaction(routes.routes[0].steps[1]);
@@ -443,7 +471,6 @@ export class EvmTxService {
     //     txHash: transactionHash.hash,
     //   });
 
-
     //   return response("IN_PROGRESS", `First step executed.. estimated time in seconds: ${txStep.estimate.executionDuration}, status: ${result.status}`, transactionHash.hash);
     // }
 
@@ -451,10 +478,14 @@ export class EvmTxService {
       txHash: transactionHash.hash,
     });
 
-    console.log(`Transaction hash: ${transactionHash.hash}, estimated time in seconds: ${txStep.estimate.executionDuration}, status: ${result.status}`);
+    console.log(
+      `Transaction hash: ${transactionHash.hash}, estimated time in seconds: ${txStep.estimate.executionDuration}, status: ${result.status}`,
+    );
 
-    return response("IN_PROGRESS", `Estimated time in seconds: ${txStep.estimate.executionDuration}, status: ${result.status}`, transactionHash.hash);
-
+    return response(
+      'IN_PROGRESS',
+      `Estimated time in seconds: ${txStep.estimate.executionDuration}, status: ${result.status}`,
+      transactionHash.hash,
+    );
   }
-
 }

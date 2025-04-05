@@ -1,4 +1,4 @@
-import { Address, Hash } from "viem";
+import { Address, Hash } from 'viem';
 
 export interface Transaction {
   hash: Hash;
@@ -9,7 +9,6 @@ export interface Transaction {
   chainId?: number;
 }
 
-  
 export interface IResponse {
   status: 'SUCCESS' | 'FAILED' | 'IN_PROGRESS';
   message: string;

@@ -5,9 +5,9 @@ import { AppService } from './app.service';
 import { EvmTxModule } from './evm-tx/evm-tx.module';
 import { AccessTokenMiddleware } from './_common/middleware/accessToken.middleware';
 import { EvmTxController } from './evm-tx/evm-tx.controller';
-import { ScheduleService } from './_common/service/schedule.service';
-import { ScheduleModule } from '@nestjs/schedule';
-import { PrismaService } from './_common/service/prisma.service';
+// import { ScheduleService } from './_common/service/schedule.service';
+// import { ScheduleModule } from '@nestjs/schedule';
+// import { PrismaService } from './_common/service/prisma.service';
 import { SolanaTxModule } from './solana-tx/solana-tx.module';
 import WalletClientService from './_common/service/walletClient.service';
 import AuthTokenService from './_common/service/authToken.service';
@@ -20,9 +20,9 @@ import { SwapController } from './swap/swap.controller';
 
 @Module({
   imports: [
-    EvmTxModule, 
+    EvmTxModule,
     // PrivyModule,
-    ScheduleModule.forRoot(),
+    // ScheduleModule.forRoot(),
     ConfigModule.forRoot({ isGlobal: true }),
     RedisModule.forRootAsync({
       imports: [ConfigModule],
@@ -39,17 +39,12 @@ import { SwapController } from './swap/swap.controller';
     SwapModule,
   ],
   controllers: [AppController],
-  providers: [AppService, ScheduleService, PrismaService, WalletClientService, AuthTokenService],
-
+  providers: [AppService, WalletClientService, AuthTokenService],
 })
-export class AppModule implements NestModule{
+export class AppModule implements NestModule {
   configure(consumer: MiddlewareConsumer) {
     consumer
       .apply(AccessTokenMiddleware)
-      .forRoutes(
-        EvmTxController,
-        SolanaTxController,
-        SwapController,
-      );
+      .forRoutes(EvmTxController, SolanaTxController, SwapController);
   }
 }
