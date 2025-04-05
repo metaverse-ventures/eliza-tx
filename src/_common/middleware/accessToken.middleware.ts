@@ -5,7 +5,6 @@ import { Request, Response, NextFunction } from 'express';
 export class AccessTokenMiddleware implements NestMiddleware {
   use(req: Request, res: Response, next: NextFunction) {
     const authHeader = req.headers['authorization'];
-    // console.log("authHeader", authHeader);
     if (!authHeader) {
       throw new UnauthorizedException('Authorization header is missing');
     }
