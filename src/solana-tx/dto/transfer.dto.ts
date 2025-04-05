@@ -1,12 +1,12 @@
-import { IsOptional, IsString } from "@nestjs/class-validator";
+import { IsString } from '@nestjs/class-validator';
 
 export class TransferDTO {
-    @IsString()
-    recipient: string;
+  @IsString()
+  recipient: string;
 
-    @IsString()
-    amount: string;
+  @IsString()
+  amount: string;
 
-    @IsString()
-    token: string
+  @IsString()
+  token: string;
 }

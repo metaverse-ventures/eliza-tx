@@ -1,4 +1,8 @@
-import { Injectable, NestMiddleware, UnauthorizedException } from '@nestjs/common';
+import {
+  Injectable,
+  NestMiddleware,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { Request, Response, NextFunction } from 'express';
 
 @Injectable()
@@ -14,7 +18,7 @@ export class AccessTokenMiddleware implements NestMiddleware {
     if (!token) {
       throw new UnauthorizedException('Invalid Authorization header format');
     }
-    
+
     // Attach the token to the request object for further processing
     req['authToken'] = token;
 

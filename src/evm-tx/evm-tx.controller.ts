@@ -5,8 +5,7 @@ import { IResponse } from 'src/_common/utils/interface';
 
 @Controller('evm-tx')
 export class EvmTxController {
-
-  constructor(private readonly evmTxService: EvmTxService) { }
+  constructor(private readonly evmTxService: EvmTxService) {}
 
   @Post('transfer')
   transfer(
@@ -14,7 +13,7 @@ export class EvmTxController {
     @Body() transferDTO: TransferDTO,
   ): Promise<IResponse> {
     const authToken = req['authToken'];
-    return this.evmTxService.transfer(transferDTO, authToken)
+    return this.evmTxService.transfer(transferDTO, authToken);
   }
 
   @Post('bridge')
@@ -23,7 +22,6 @@ export class EvmTxController {
     @Body() BridgePayloadDTO: BridgePayloadDTO,
   ): Promise<IResponse> {
     const authToken = req['authToken'];
-    return this.evmTxService.bridge(BridgePayloadDTO, authToken)
+    return this.evmTxService.bridge(BridgePayloadDTO, authToken);
   }
-
 }

@@ -4,13 +4,10 @@ import { SwapPayloadDTO } from './dto/swap.dto';
 
 @Controller('swap')
 export class SwapController {
-  constructor(private readonly swapService: SwapService) { }
+  constructor(private readonly swapService: SwapService) {}
 
   @Post()
-  transferSwap(
-    @Req() req: Request,
-    @Body() swapDTO: SwapPayloadDTO ,
-  ) {
+  transferSwap(@Req() req: Request, @Body() swapDTO: SwapPayloadDTO) {
     const authToken = req['authToken'];
     return this.swapService.transferSwap(swapDTO, authToken);
   }

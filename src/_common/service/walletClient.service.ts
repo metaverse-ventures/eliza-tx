@@ -1,6 +1,11 @@
-import { BadRequestException, Injectable, InternalServerErrorException, UnauthorizedException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  InternalServerErrorException,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { LinkedAccountWithMetadata, PrivyClient, User } from '@privy-io/server-auth';
+import { PrivyClient } from '@privy-io/server-auth';
 import * as dotenv from 'dotenv';
 import { createViemAccount } from '@privy-io/server-auth/viem';
 import AuthTokenService from './authToken.service';
@@ -10,13 +15,11 @@ import {
   createPublicClient,
   createWalletClient,
   http,
-  LocalAccount,
-  PublicClient,
   WalletClient,
 } from 'viem';
 import * as viemChains from 'viem/chains';
 import { SupportedChain } from '../utils/types';
-import * as crypto from 'crypto'; 
+import * as crypto from 'crypto';
 import { RedisService } from '@liaoliaots/nestjs-redis';
 import { Redis } from 'ioredis';
 
@@ -37,7 +40,7 @@ export default class WalletClientService {
     polygon: viemChains.polygon,
     gnosis: viemChains.gnosis,
     arbitrum: viemChains.arbitrum,
-    optimism:viemChains.optimism
+    optimism: viemChains.optimism,
   };
 
   private chainFromChainId: Record<number, Chain> = {
@@ -50,7 +53,7 @@ export default class WalletClientService {
     [viemChains.baseSepolia.id]: viemChains.baseSepolia,
     [viemChains.arbitrum.id]: viemChains.arbitrum,
     [viemChains.gnosis.id]: viemChains.gnosis,
-    [viemChains.optimism.id]: viemChains.optimism
+    [viemChains.optimism.id]: viemChains.optimism,
   };
 
   private providers: Record<number, string> = {
@@ -63,7 +66,7 @@ export default class WalletClientService {
     [viemChains.baseSepolia.id]: process.env.INFURA_PROVIDER_BASE_SEPOLIA,
     [viemChains.bscTestnet.id]: process.env.INFURA_PROVIDER_BSC_TESTNET,
     [viemChains.arbitrum.id]: process.env.INFURA_PROVIDER_ARBITRUM,
-    [viemChains.optimism.id]: process.env.INFURA_PROVIDER_OPTIMISM
+    [viemChains.optimism.id]: process.env.INFURA_PROVIDER_OPTIMISM,
   };
 
   constructor(
@@ -78,13 +81,16 @@ export default class WalletClientService {
 
     this.privy = new PrivyClient(appId, appSecret, {
       walletApi: {
-        authorizationPrivateKey: this.configService.getOrThrow<string>('PRIVY_AUTHORIZATION_PRIVATE_KEY'),
+        authorizationPrivateKey: this.configService.getOrThrow<string>(
+          'PRIVY_AUTHORIZATION_PRIVATE_KEY',
+        ),
       },
     });
   }
 
   async verifyAndGetSolAddress(authToken: string) {
-    const verifiedAuthToken = await this.authTokenService.verifyAuthToken(authToken);
+    const verifiedAuthToken =
+      await this.authTokenService.verifyAuthToken(authToken);
     // const user: User = await this.privy.getUserById(verifiedAuthToken.userId);
     const user: any = await this.privy.getUserById(verifiedAuthToken.userId);
 
@@ -102,7 +108,6 @@ export default class WalletClientService {
     }
 
     return privySolanaAddress;
-
   }
 
   async createLocalAccount(authToken: string): Promise<Account> {
@@ -162,7 +167,7 @@ export default class WalletClientService {
       if (!publicClient) {
         throw new InternalServerErrorException('Public Client not initialized');
       }
-  
+
       return publicClient;
     } catch (error) {
       throw new InternalServerErrorException(error.message);
@@ -196,14 +201,20 @@ export default class WalletClientService {
         const data = JSON.parse(cachedData);
         userId = data.userId;
       } else {
-        const verifiedAuthToken =  await this.authTokenService.verifyAuthToken(authToken);
-        
+        const verifiedAuthToken =
+          await this.authTokenService.verifyAuthToken(authToken);
+
         if (!verifiedAuthToken) {
           throw new UnauthorizedException('User is not verified.');
         }
 
         userId = verifiedAuthToken.userId;
-        await this.redisClient.set(cacheKey, JSON.stringify({userId}), 'EX', 60 * 60);
+        await this.redisClient.set(
+          cacheKey,
+          JSON.stringify({ userId }),
+          'EX',
+          60 * 60,
+        );
       }
 
       // console.log('userId: ', verifiedAuthToken.userId);
@@ -216,8 +227,10 @@ export default class WalletClientService {
           account.chainType === 'ethereum',
       );
 
-      if(!privyEthereumAccount.delegated) {
-        throw new BadRequestException('User has to delegate the actions for this privy account');
+      if (!privyEthereumAccount.delegated) {
+        throw new BadRequestException(
+          'User has to delegate the actions for this privy account',
+        );
       }
 
       const privyEthereumAddress = privyEthereumAccount.address;
@@ -240,7 +253,9 @@ export default class WalletClientService {
         selectedChain = this.chains[chain];
 
         if (!selectedChain) {
-          throw new InternalServerErrorException('The chain you asked is not supported.');
+          throw new InternalServerErrorException(
+            'The chain you asked is not supported.',
+          );
         }
       } else if (chainId) {
         selectedChain = await this.getChainFromId(chainId);

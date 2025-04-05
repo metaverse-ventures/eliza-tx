@@ -6,6 +6,6 @@ import WalletClientService from 'src/_common/service/walletClient.service';
 
 @Module({
   controllers: [SwapController],
-  providers: [SwapService,  WalletClientService, AuthTokenService],
+  providers: [SwapService, WalletClientService, AuthTokenService],
 })
 export class SwapModule {}
