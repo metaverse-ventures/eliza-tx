@@ -6,6 +6,7 @@
   "private": true,
   "license": "UNLICENSED",
   "scripts": {
+    "prisma:generate": "npx prisma generate --schema=./prisma/schema.prisma",
     "build": "nest build",
     "format": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\"",
     "start": "nest start",
@@ -32,7 +33,7 @@
     "@nestjs/schedule": "^5.0.1",
     "@prisma/client": "^6.3.0",
     "@privy-io/server-auth": "^1.18.1",
-    "@solana/spl-token": "^0.4.12",
+    "@solana/spl-token": "^0.4.13",
     "@solana/web3.js": "^1.95.8",
     "axios": "^1.7.9",
     "dotenv": "^16.4.7",
