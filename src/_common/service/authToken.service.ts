@@ -1,4 +1,5 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, InternalServerErrorException } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { AuthTokenClaims, PrivyClient } from '@privy-io/server-auth';
 import * as dotenv from 'dotenv';
 
@@ -7,44 +8,27 @@ dotenv.config();
 @Injectable()
 export default class AuthTokenService {
   private readonly privy: PrivyClient;
-  constructor() {
-    const appId = process.env.PRIVY_APP_ID;
-    const appSecret = process.env.PRIVY_APP_SECRET;
-
-    if (!appId || !appSecret) {
-      throw new Error(
-        'Privy App ID and App Secret must be set in environment variables.',
-      );
-    }
+  constructor(
+    private configService: ConfigService,
+  ) {
+    const appId = this.configService.getOrThrow<string>('PRIVY_APP_ID');
+    const appSecret = this.configService.getOrThrow<string>('PRIVY_APP_SECRET');
 
     this.privy = new PrivyClient(appId, appSecret, {
       walletApi: {
-        authorizationPrivateKey: process.env.PRIVY_AUTHORIZATION_PRIVATE_KEY,
-      }
-    });
+        authorizationPrivateKey: this.configService.getOrThrow<string>('PRIVY_AUTHORIZATION_PRIVATE_KEY'),
+      },
+    })
   }
 
   async verifyAuthToken(authToken: string): Promise<AuthTokenClaims> {
-    try {
-      console.log("authToken: ", authToken)
-      const verificationKey = process.env.VERIFICATION_KEY;
-      console.log("verification key: " + verificationKey);
-      if (!verificationKey) {
-        throw new Error(
-          'Verification Key must be set in environment variables.',
-        );
-      }
-      
+    try {   
       const verifiedClaims = await this.privy.verifyAuthToken(
         authToken
-      );
-
-      console.log("verifiedClaims:" + verifiedClaims.appId);
-      
+      );    
       return verifiedClaims;
     } catch (error) {
-      console.error(`Token verification failed with error: ${error.message}`);
-      throw error;
+      throw new InternalServerErrorException(`Token verification failed with error: ${error.message}`);
     }
   }
 }

@@ -1,39 +1,43 @@
-import { Address, Hash } from 'viem';
-import * as viemChains from 'viem/chains';
-
-const _SupportedChainList = Object.keys(viemChains) as Array<
-  keyof typeof viemChains
->;
-export type SupportedChain = (typeof _SupportedChainList)[number];
+import { Address } from 'viem';
+import { SupportedChain } from 'src/_common/utils/types';
+import { IsBoolean, IsEthereumAddress, IsOptional, IsString, IsUUID ,} from '@nestjs/class-validator';
 
 export class TransferDTO {
+
+  @IsString()
   fromChain: SupportedChain;
+
+  @IsEthereumAddress()
   toAddress: Address;
+
+  @IsString()
   amount: string;
-  data?: `0x${string}`;
+
+  @IsString()
+  token: string;
 }
 
-export class SwapPayload {
-  inputToken: string;
-  outputToken: string;
-  amount: string;
-  chain: SupportedChain;
-}
+export class BridgePayloadDTO {
 
-export class BridgePayload {
+  @IsString()
   fromChain: SupportedChain;
-  toChain: SupportedChain;
-  fromToken: Address;
-  toToken: Address;
-  amount: string;
-  toAddress?: Address;
-}
 
-export interface Transaction {
-  hash: Hash;
-  from: Address;
-  to: Address;
-  value: bigint;
-  data?: `0x${string}`;
-  chainId?: number;
+  @IsString()
+  toChain: SupportedChain;
+
+  @IsEthereumAddress()
+  fromToken: Address;
+
+  @IsEthereumAddress()
+  toToken: Address;
+
+  @IsString()
+  amount: string;
+
+  @IsOptional()
+  @IsEthereumAddress()
+  toAddress?: Address;
+
+  // @IsBoolean()
+  // fuel: boolean = false;
 }

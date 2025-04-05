@@ -1,23 +1,19 @@
-import { Injectable, NestMiddleware, HttpException, HttpStatus } from '@nestjs/common';
+import { Injectable, NestMiddleware, UnauthorizedException } from '@nestjs/common';
 import { Request, Response, NextFunction } from 'express';
 
 @Injectable()
 export class AccessTokenMiddleware implements NestMiddleware {
   use(req: Request, res: Response, next: NextFunction) {
-    // Extract the Authorization header
-    
     const authHeader = req.headers['authorization'];
     if (!authHeader) {
-      throw new HttpException('Authorization header is missing', HttpStatus.UNAUTHORIZED);
+      throw new UnauthorizedException('Authorization header is missing');
     }
 
     // Extract the token (assuming "Bearer <token>")
     const token = authHeader.split(' ')[1];
     if (!token) {
-      throw new HttpException('Invalid Authorization header format', HttpStatus.UNAUTHORIZED);
+      throw new UnauthorizedException('Invalid Authorization header format');
     }
-
-    console.log("token", token);
     
     // Attach the token to the request object for further processing
     req['authToken'] = token;
