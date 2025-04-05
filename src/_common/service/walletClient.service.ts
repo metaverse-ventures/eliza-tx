@@ -8,11 +8,9 @@ import {
   Account,
   Chain,
   createPublicClient,
-  createPublicClient,
   createWalletClient,
   http,
   LocalAccount,
-  PublicClient,
   PublicClient,
   WalletClient,
 } from 'viem';
@@ -30,7 +28,6 @@ export default class WalletClientService {
   private readonly redisClient: Redis;
 
   chains: Record<string, Chain> = {
-    ethereum: viemChains.mainnet,
     ethereum: viemChains.mainnet,
     sepolia: viemChains.sepolia,
     bsc: viemChains.bsc,
@@ -108,28 +105,6 @@ export default class WalletClientService {
 
   }
 
-  async verifyAndGetSolAddress(authToken: string) {
-    const verifiedAuthToken = await this.authTokenService.verifyAuthToken(authToken);
-    // const user: User = await this.privy.getUserById(verifiedAuthToken.userId);
-    const user: any = await this.privy.getUserById(verifiedAuthToken.userId);
-
-    const privySolanaAccount = user.linkedAccounts.find(
-      (account) =>
-        account.walletClientType === 'privy' &&
-        account.connectorType === 'embedded' &&
-        account.chainType === 'solana',
-    );
-    const privySolanaAddress = privySolanaAccount.address;
-    if (privySolanaAddress) {
-      console.log('Privy Solana Address:', privySolanaAddress);
-    } else {
-      console.log('No linked account matches the criteria.');
-    }
-
-    return privySolanaAddress;
-
-  }
-
   async createLocalAccount(authToken: string): Promise<Account> {
     try {
       const verifiedAuthToken =
@@ -164,17 +139,6 @@ export default class WalletClientService {
       );
       throw error;
     }
-  }
-
-  async createPublicClient(chain: Chain): Promise<PublicClient> {
-    
-    const publicClient: any = createPublicClient({
-      chain: chain, 
-      transport: http(
-        process.env.INFURA_PROVIDER_SEPOLIA,
-      ),
-    });
-    return publicClient;
   }
 
   async getChainFromId(chainId: number): Promise<Chain> | undefined {

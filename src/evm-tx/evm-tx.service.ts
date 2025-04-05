@@ -8,7 +8,6 @@ import {
 } from '@privy-io/server-auth';
 import WalletClientService from 'src/_common/service/walletClient.service';
 import {
-  ChainType,
   createConfig,
   ExtendedChain,
   getRoutes,
