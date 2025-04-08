@@ -18,6 +18,8 @@ export class TransferDTO {
 
   @IsString()
   token: string;
+
+  projectType: "Invoice" | "OTC" | "Seekers";
 }
 
 export class BridgePayloadDTO {
@@ -42,4 +44,7 @@ export class BridgePayloadDTO {
 
   // @IsBoolean()
   // fuel: boolean = false;
+
+  projectType: "Invoice" | "OTC" | "Seekers";
+
 }

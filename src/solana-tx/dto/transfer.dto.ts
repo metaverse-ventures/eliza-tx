@@ -9,4 +9,7 @@ export class TransferDTO {
 
   @IsString()
   token: string;
+
+  @IsString()
+  projectType: string;
 }
