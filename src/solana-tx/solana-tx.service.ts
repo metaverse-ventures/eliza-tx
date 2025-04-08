@@ -17,32 +17,21 @@ import {
 import { getToken } from '@lifi/sdk';
 import { nativeSOLAddress, solChainId } from 'src/_common/helper/constants';
 import { response } from 'src/_common/helper/response';
+import { PrivyConfig } from 'src/_common/service/privy.service';
+
+type ProjectType = 'invoice' | 'otc' | 'seekers';
 
 @Injectable()
 export class SolanaTxService {
-  private readonly privy: PrivyClient;
+  private privy: PrivyClient;
   private readonly connection: Connection;
 
   constructor(
     private authTokenService: AuthTokenService,
     private walletClientService: WalletClientService,
-    private configService: ConfigService,
-  ) {
-    const appId = this.configService.getOrThrow<string>('PRIVY_APP_ID');
-    const appSecret = this.configService.getOrThrow<string>('PRIVY_APP_SECRET');
+    private privyConfig: PrivyConfig,
+  ) {}
 
-    this.privy = new PrivyClient(appId, appSecret, {
-      walletApi: {
-        authorizationPrivateKey: this.configService.getOrThrow<string>(
-          'PRIVY_AUTHORIZATION_PRIVATE_KEY',
-        ),
-      },
-    });
-
-    this.connection = new Connection(
-      this.configService.getOrThrow<string>('SOLANA_RPC_URL'),
-    );
-  }
 
   async getNumberDecimals(mintAddress: string): Promise<number> {
     const info = await this.connection.getParsedAccountInfo(
@@ -64,6 +53,11 @@ export class SolanaTxService {
   }
 
   async transfer(transferDTO: TransferDTO, authToken: string) {
+    console.log({transferDTO});
+  
+    this.privy = this.privyConfig.initializePrivyClient(
+      transferDTO.projectType as ProjectType);
+
     const [
       solanaAddress,
       { blockhash, lastValidBlockHeight },
