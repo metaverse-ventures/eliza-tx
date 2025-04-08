@@ -13,4 +13,6 @@ export class SwapPayloadDTO {
 
   @IsString()
   chain: SupportedChain;
+
+  projectType: "Invoice" | "OTC" | "Seekers";
 }

@@ -39,32 +39,20 @@ import {
 } from 'src/_common/helper/constants';
 import { IResponse } from 'src/_common/utils/interface';
 import { response } from 'src/_common/helper/response';
+import { PrivyConfig } from 'src/_common/service/privy.service';
+
+type ProjectType = 'invoice' | 'otc' | 'seekers';
 
 @Injectable()
 export class SwapService {
-  private readonly privy: PrivyClient;
+  private privy: PrivyClient;
   private readonly connection: Connection;
 
   constructor(
     private authTokenService: AuthTokenService,
     private walletClientService: WalletClientService,
-    private configService: ConfigService,
-  ) {
-    const appId = this.configService.getOrThrow<string>('PRIVY_APP_ID');
-    const appSecret = this.configService.getOrThrow<string>('PRIVY_APP_SECRET');
-
-    this.privy = new PrivyClient(appId, appSecret, {
-      walletApi: {
-        authorizationPrivateKey: this.configService.getOrThrow<string>(
-          'PRIVY_AUTHORIZATION_PRIVATE_KEY',
-        ),
-      },
-    });
-
-    this.connection = new Connection(
-      this.configService.getOrThrow<string>('SOLANA_RPC_URL'),
-    );
-  }
+    private privyConfig: PrivyConfig,
+  ) {}
 
   async getTokenAddressAndDecimal(
     tokenSymbol: string,
@@ -77,6 +65,10 @@ export class SwapService {
   }
 
   async transferSwap(swapDTO: SwapPayloadDTO, authToken: string) {
+    console.log('swapDTO', swapDTO);
+    this.privy = this.privyConfig.initializePrivyClient(
+      swapDTO.projectType as ProjectType,
+    );
     if (
       (swapDTO.chain.toLowerCase() as string) == 'sol' ||
       (swapDTO.chain.toLowerCase() as string) == 'solana'
@@ -94,6 +86,9 @@ export class SwapService {
 
   private async swapSol(swapDTO: SwapPayloadDTO, authToken: string) {
     console.log('swapDTO', swapDTO);
+    this.privy = this.privyConfig.initializePrivyClient(
+      swapDTO.projectType as ProjectType,
+    );
 
     const { blockhash, lastValidBlockHeight } =
       await this.connection.getLatestBlockhash();
