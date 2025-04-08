@@ -28,28 +28,21 @@ import {
 import { approvalABI, transferABI } from 'src/_common/helper/abi';
 import { ConfigService } from '@nestjs/config';
 import { response } from 'src/_common/helper/response';
+import { PrivyConfig } from 'src/_common/service/privy.service';
+
+type ProjectType = 'invoice' | 'otc' | 'seekers';
+
 
 @Injectable()
 export class EvmTxService {
-  private readonly privy: PrivyClient;
+  private privy: PrivyClient;
 
   constructor(
     private walletClientService: WalletClientService,
     // private prismaService: PrismaService,
     private configService: ConfigService,
-  ) {
-    const appId = this.configService.getOrThrow<string>('PRIVY_APP_ID');
-    const appSecret = this.configService.getOrThrow<string>('PRIVY_APP_SECRET');
-
-    this.privy = new PrivyClient(appId, appSecret, {
-      walletApi: {
-        authorizationPrivateKey: this.configService.getOrThrow<string>(
-          'PRIVY_AUTHORIZATION_PRIVATE_KEY',
-        ),
-      },
-    });
-  }
-
+    private privyConfig: PrivyConfig,
+  ) {}
   async getTokenList(chainId: number) {
     try {
       const tokens = await getTokens({
@@ -108,6 +101,8 @@ export class EvmTxService {
   }
 
   async transfer(TransferPayload: TransferDTO, authToken: string) {
+    console.log({ TransferPayload });
+    this.privy = this.privyConfig.initializePrivyClient(TransferPayload.projectType as ProjectType);
     let nativeTransfer: boolean = null;
     if (TransferPayload.token) {
       nativeTransfer = false;
@@ -250,6 +245,8 @@ export class EvmTxService {
   }
 
   async bridge(BridgePayloadDTO: BridgePayloadDTO, authToken: string) {
+    console.log({ BridgePayloadDTO });
+    this.privy = this.privyConfig.initializePrivyClient(BridgePayloadDTO.projectType as ProjectType);
     const walletClient = await this.walletClientService.createWalletClient({
       authToken: authToken,
       chain: BridgePayloadDTO.fromChain,
