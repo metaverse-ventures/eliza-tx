@@ -31,10 +31,7 @@ export class SolanaTxService {
     private privyConfig: PrivyConfig,
     private configService: ConfigService,
   ) {
-    this.connection = new Connection(this.configService.get('SOLANA_RPC_URL'), {
-      commitment: 'confirmed',
-      confirmTransactionInitialTimeout: 60000,
-    });
+    this.connection = new Connection(this.configService.get('SOLANA_RPC_URL'));
   }
 
 
@@ -72,13 +69,23 @@ export class SolanaTxService {
       this.connection.getLatestBlockhash(),
       this.getTokenAddressAndDecimal(transferDTO.token, solChainId),
     ]);
-
+  console.log({
+    solanaAddress,
+    blockhash,
+    lastValidBlockHeight,
+    inputTokenAddress,
+    tokenDec,
+  })
     const amountToSend = (
       parseFloat(transferDTO.amount) * Math.pow(10, tokenDec)
     ).toString();
 
+    console.log({ amountToSend });
+
     const recipientPubKey = new PublicKey(transferDTO.toAddress);
     const senderPubKey = new PublicKey(solanaAddress);
+    console.log(inputTokenAddress !== nativeSOLAddress);
+    
 
     if (inputTokenAddress !== nativeSOLAddress) {
       const { getAccount, getAssociatedTokenAddress } = await import(
@@ -113,11 +120,16 @@ export class SolanaTxService {
         );
     } else {
       const solBalance = await this.connection.getBalance(senderPubKey);
-      if (solBalance <= parseInt(amountToSend))
+      console.log({ solBalance, amountToSend });
+      if (solBalance <= parseInt(amountToSend)) {
+        console.log(
+          `Insufficient native SOL balance: ${solBalance} required: ${amountToSend}`
+        );
         return response(
           'FAILED',
           `Insufficient native SOL balance to proceed with the transaction. Please fund the account`,
         );
+      }
     }
 
     if (inputTokenAddress !== nativeSOLAddress) {

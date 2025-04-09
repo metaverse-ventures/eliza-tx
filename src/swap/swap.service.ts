@@ -52,10 +52,7 @@ export class SwapService {
     private privyConfig: PrivyConfig,
     private configService: ConfigService,
   ) {
-    this.connection = new Connection(this.configService.get('SOLANA_RPC_URL'), {
-      commitment: 'confirmed',
-      confirmTransactionInitialTimeout: 60000,
-    });
+    this.connection = new Connection(this.configService.get('SOLANA_RPC_URL'));
   }
 
   async getTokenAddressAndDecimal(
@@ -88,6 +85,7 @@ export class SwapService {
     );
   }
 
+  //TODO: check the balance of the sender account
   private async swapSol(swapDTO: SwapPayloadDTO, authToken: string) {
     console.log('swapDTO', swapDTO);
     this.privy = this.privyConfig.initializePrivyClient(
@@ -224,7 +222,7 @@ export class SwapService {
           {
             signature: data.hash,
           } as BlockheightBasedTransactionConfirmationStrategy,
-          'finalized',
+          'processed',
         );
       }
     }

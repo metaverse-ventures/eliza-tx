@@ -246,6 +246,7 @@ export class EvmTxService {
     }
   }
 
+  //Check if user has enough token balance to perform the transaction
   async bridge(BridgePayloadDTO: BridgePayloadDTO, authToken: string) {
     console.log({ BridgePayloadDTO });
     this.privy = this.privyConfig.initializePrivyClient(BridgePayloadDTO.projectType as ProjectType);
