@@ -22,8 +22,10 @@ import {
   getTokenBalance,
 } from '@lifi/sdk';
 import {
+  Address,
   encodeFunctionData,
   formatEther,
+  formatUnits,
   Hash,
   parseUnits,
   PublicClient,
@@ -31,7 +33,7 @@ import {
   WalletClient,
   zeroAddress,
 } from 'viem';
-import { approvalABI } from 'src/_common/helper/abi';
+import { approvalABI, balanceOfABI } from 'src/_common/helper/abi';
 import {
   nativeSOLAddress,
   solChainId,
@@ -376,22 +378,25 @@ export class SwapService {
           };
 
           const inputToken = await getToken(token.chainId, token.address);
-          const tokenBalance = await getTokenBalance(
-            walletClient.account.address,
-            inputToken,
-          );
 
-          console.log('Token balance:', tokenBalance.amount.toString());
-          if (
-            parseInt(tokenBalance.amount.toString()) <
-            parseInt(fromAmountString)
-          ) {
-            console.error('Insufficient balance');
-            const res: IResponse = {
-              status: 'FAILED',
-              message: `Insufficient balance for ${SwapPayloadDTO.inputToken} to do this transaction. Please fund the account`,
-            };
-            return res;
+          // const tokenBalance = await getTokenBalance(
+          //   walletClient.account.address,
+          //   inputToken,
+          // );
+
+          const tokenBalance = await publicClient.readContract({
+            address: inputTokenAddress as Address,
+            abi: balanceOfABI,
+            functionName: 'balanceOf',
+            args: [walletClient.account.address.toLowerCase()],
+          });
+
+          console.log('Token balance:', formatUnits(tokenBalance as bigint, tokenDec));
+          if (!tokenBalance || parseInt(formatUnits(tokenBalance as bigint, tokenDec)) < parseInt(fromAmountString)) {
+            return response(
+              'FAILED',
+              `Insufficient balance. Your balance is ${formatUnits(tokenBalance as bigint, tokenDec)}. Please fund your account and try again.`,
+            );
           }
 
           // Check if fromAddress is not the zero address

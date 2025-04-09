@@ -12,11 +12,12 @@ import {
   getStepTransaction,
   getStatus,
   getGasRecommendation,
-  getTokenBalance,
 } from '@lifi/sdk';
 import {
+  Address,
   encodeFunctionData,
   formatEther,
+  formatUnits,
   Hash,
   parseEther,
   parseUnits,
@@ -25,7 +26,7 @@ import {
   WalletClient,
   zeroAddress,
 } from 'viem';
-import { approvalABI, transferABI } from 'src/_common/helper/abi';
+import { approvalABI, balanceOfABI, transferABI } from 'src/_common/helper/abi';
 import { ConfigService } from '@nestjs/config';
 import { response } from 'src/_common/helper/response';
 import { PrivyConfig, ProjectType } from 'src/_common/service/privy.service';
@@ -139,15 +140,19 @@ export class EvmTxService {
         const inputToken = await getToken(fromChain.id, erc20TokenAddress);
         console.log('inputToken:', inputToken);
         console.log(walletClient.account.address, 'wallet address');
-        const tokenBalance = await getTokenBalance(
-          walletClient.account.address.toLowerCase(),
-          inputToken,
-        );
-        console.log('Token balance:', tokenBalance);
-        if (!tokenBalance || parseInt(tokenBalance.amount.toString()) < parseInt(transferAmount.toString())) {
+
+        const tokenBalance = await publicClient.readContract({
+          address: erc20TokenAddress as Address,
+          abi: balanceOfABI,
+          functionName: 'balanceOf',
+          args: [walletClient.account.address.toLowerCase()],
+        });
+
+        console.log('Token balance:', formatUnits(tokenBalance as bigint, tokenDecimals));
+        if (!tokenBalance || parseInt(formatUnits(tokenBalance as bigint, tokenDecimals)) < parseInt(transferAmount.toString())) {
           return response(
             'FAILED',
-            `Insufficient balance. Your balance is ${tokenBalance ? formatEther(tokenBalance.amount) : '0'}. Please fund your account and try again.`,
+            `Insufficient balance. Your balance is ${formatUnits(tokenBalance as bigint, tokenDecimals)}. Please fund your account and try again.`,
           );
         }
         const encodedData = encodeFunctionData({
