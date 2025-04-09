@@ -77,7 +77,7 @@ export class SolanaTxService {
       parseFloat(transferDTO.amount) * Math.pow(10, tokenDec)
     ).toString();
 
-    const recipientPubKey = new PublicKey(transferDTO.recipient);
+    const recipientPubKey = new PublicKey(transferDTO.toAddress);
     const senderPubKey = new PublicKey(solanaAddress);
 
     if (inputTokenAddress !== nativeSOLAddress) {
