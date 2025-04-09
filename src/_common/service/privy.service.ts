@@ -2,7 +2,7 @@ import { PrivyClient } from '@privy-io/server-auth';
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 
-export type ProjectType = 'invoice' | 'otc' | 'seekers';
+export type ProjectType = 'Invoice' | 'OTC' | 'Seekers';
 
 @Injectable()
 export class PrivyConfig {

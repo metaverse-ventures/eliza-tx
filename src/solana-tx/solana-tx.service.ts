@@ -17,9 +17,8 @@ import {
 import { getToken } from '@lifi/sdk';
 import { nativeSOLAddress, solChainId } from 'src/_common/helper/constants';
 import { response } from 'src/_common/helper/response';
-import { PrivyConfig } from 'src/_common/service/privy.service';
+import { PrivyConfig, ProjectType } from 'src/_common/service/privy.service';
 
-type ProjectType = 'invoice' | 'otc' | 'seekers';
 
 @Injectable()
 export class SolanaTxService {

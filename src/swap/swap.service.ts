@@ -39,9 +39,7 @@ import {
 } from 'src/_common/helper/constants';
 import { IResponse } from 'src/_common/utils/interface';
 import { response } from 'src/_common/helper/response';
-import { PrivyConfig } from 'src/_common/service/privy.service';
-
-type ProjectType = 'invoice' | 'otc' | 'seekers';
+import { PrivyConfig, ProjectType } from 'src/_common/service/privy.service';
 
 @Injectable()
 export class SwapService {

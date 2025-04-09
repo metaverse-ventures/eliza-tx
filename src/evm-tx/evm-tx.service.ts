@@ -28,9 +28,8 @@ import {
 import { approvalABI, transferABI } from 'src/_common/helper/abi';
 import { ConfigService } from '@nestjs/config';
 import { response } from 'src/_common/helper/response';
-import { PrivyConfig } from 'src/_common/service/privy.service';
+import { PrivyConfig, ProjectType } from 'src/_common/service/privy.service';
 
-type ProjectType = 'invoice' | 'otc' | 'seekers';
 
 
 @Injectable()
