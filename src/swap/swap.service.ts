@@ -50,7 +50,13 @@ export class SwapService {
     private authTokenService: AuthTokenService,
     private walletClientService: WalletClientService,
     private privyConfig: PrivyConfig,
-  ) {}
+    private configService: ConfigService,
+  ) {
+    this.connection = new Connection(this.configService.get('SOLANA_RPC_URL'), {
+      commitment: 'confirmed',
+      confirmTransactionInitialTimeout: 60000,
+    });
+  }
 
   async getTokenAddressAndDecimal(
     tokenSymbol: string,

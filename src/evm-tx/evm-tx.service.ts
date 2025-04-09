@@ -125,26 +125,29 @@ export class EvmTxService {
           TransferPayload.token,
           fromChain.id,
         );
+        console.log('erc20TokenAddress:', erc20TokenAddress);
         const tokenDecimals = await this.getTokenDec(
           TransferPayload.token,
           fromChain.id,
         );
+        console.log('tokenDecimals:', tokenDecimals);
         const transferAmount = parseUnits(
           TransferPayload.amount,
           tokenDecimals,
         );
+        console.log({transferAmount});
         const inputToken = await getToken(fromChain.id, erc20TokenAddress);
+        console.log('inputToken:', inputToken);
+        console.log(walletClient.account.address, 'wallet address');
         const tokenBalance = await getTokenBalance(
-          walletClient.account.address,
+          walletClient.account.address.toLowerCase(),
           inputToken,
         );
-        if (
-          parseInt(tokenBalance.amount.toString()) <
-          parseInt(transferAmount.toString())
-        ) {
+        console.log('Token balance:', tokenBalance);
+        if (!tokenBalance || parseInt(tokenBalance.amount.toString()) < parseInt(transferAmount.toString())) {
           return response(
             'FAILED',
-            `Insufficient balance. Your balance is ${formatEther(tokenBalance.amount)}. Please fund your account and try again.`,
+            `Insufficient balance. Your balance is ${tokenBalance ? formatEther(tokenBalance.amount) : '0'}. Please fund your account and try again.`,
           );
         }
         const encodedData = encodeFunctionData({

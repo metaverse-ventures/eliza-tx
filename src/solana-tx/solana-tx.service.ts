@@ -29,7 +29,13 @@ export class SolanaTxService {
     private authTokenService: AuthTokenService,
     private walletClientService: WalletClientService,
     private privyConfig: PrivyConfig,
-  ) {}
+    private configService: ConfigService,
+  ) {
+    this.connection = new Connection(this.configService.get('SOLANA_RPC_URL'), {
+      commitment: 'confirmed',
+      confirmTransactionInitialTimeout: 60000,
+    });
+  }
 
 
   async getNumberDecimals(mintAddress: string): Promise<number> {
