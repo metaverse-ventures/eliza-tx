@@ -149,7 +149,7 @@ export class EvmTxService {
         });
 
         console.log('Token balance:', formatUnits(tokenBalance as bigint, tokenDecimals));
-        if (!tokenBalance || parseFloat(formatUnits(tokenBalance as bigint, tokenDecimals)) < parseFloat(transferAmount.toString())) {
+        if (!tokenBalance || parseFloat(formatUnits(tokenBalance as bigint, tokenDecimals)) < parseFloat(TransferPayload.amount)) {
           return response(
             'FAILED',
             `Insufficient balance. Your balance is ${formatUnits(tokenBalance as bigint, tokenDecimals)}. Please fund your account and try again.`,

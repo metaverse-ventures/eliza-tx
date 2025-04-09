@@ -392,7 +392,7 @@ export class SwapService {
           });
 
           console.log('Token balance:', parseFloat(formatUnits(tokenBalance as bigint, tokenDec)));
-          if (!tokenBalance || parseFloat(formatUnits(tokenBalance as bigint, tokenDec)) < parseInt(fromAmountString)) {
+          if (!tokenBalance || parseFloat(formatUnits(tokenBalance as bigint, tokenDec)) < parseFloat(SwapPayloadDTO.amount)) {
             return response(
               'FAILED',
               `Insufficient balance. Your balance is ${formatUnits(tokenBalance as bigint, tokenDec)}. Please fund your account and try again.`,
