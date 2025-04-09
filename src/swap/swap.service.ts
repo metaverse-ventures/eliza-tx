@@ -22,8 +22,10 @@ import {
   getTokenBalance,
 } from '@lifi/sdk';
 import {
+  Address,
   encodeFunctionData,
   formatEther,
+  formatUnits,
   Hash,
   parseUnits,
   PublicClient,
@@ -31,7 +33,7 @@ import {
   WalletClient,
   zeroAddress,
 } from 'viem';
-import { approvalABI } from 'src/_common/helper/abi';
+import { approvalABI, balanceOfABI } from 'src/_common/helper/abi';
 import {
   nativeSOLAddress,
   solChainId,
@@ -52,10 +54,7 @@ export class SwapService {
     private privyConfig: PrivyConfig,
     private configService: ConfigService,
   ) {
-    this.connection = new Connection(this.configService.get('SOLANA_RPC_URL'), {
-      commitment: 'confirmed',
-      confirmTransactionInitialTimeout: 60000,
-    });
+    this.connection = new Connection(this.configService.get('SOLANA_RPC_URL'));
   }
 
   async getTokenAddressAndDecimal(
@@ -88,6 +87,7 @@ export class SwapService {
     );
   }
 
+  //TODO: check the balance of the sender account
   private async swapSol(swapDTO: SwapPayloadDTO, authToken: string) {
     console.log('swapDTO', swapDTO);
     this.privy = this.privyConfig.initializePrivyClient(
@@ -129,17 +129,20 @@ export class SwapService {
         '@solana/spl-token'
       );
       const inputTokenAccount = new PublicKey(inputTokenAddress);
-      const senderTokenATAData = await getAssociatedTokenAddress(
+      const senderInputTokenATAData = await getAssociatedTokenAddress(
         inputTokenAccount,
         senderPubKey,
       );
 
       console.log({ inputTokenAccount });
-      const [info, solBalance] = await Promise.all([
-        getAccount(this.connection, senderTokenATAData),
-        this.connection.getBalance(senderPubKey),
+      const [info, tokenBalance] = await Promise.all([
+        getAccount(this.connection, senderInputTokenATAData),
+        this.connection.getTokenAccountBalance(senderInputTokenATAData),
       ]);
-      console.log({ info: info.amount, solBalance });
+
+      const solBalance = await this.connection.getBalance(senderPubKey);
+      console.log({ info: info.amount, tokenBalance, solBalance });
+
       if (info.amount == null)
         return response(
           'FAILED',
@@ -163,6 +166,7 @@ export class SwapService {
           `Insufficient native SOL balance to proceed with the transaction. Please fund the account`,
         );
     }
+
     const routes = await getRoutes({
       fromChainId: solChainId,
       fromAmount: amountToSend,
@@ -224,7 +228,7 @@ export class SwapService {
           {
             signature: data.hash,
           } as BlockheightBasedTransactionConfirmationStrategy,
-          'finalized',
+          'processed',
         );
       }
     }
@@ -374,22 +378,25 @@ export class SwapService {
           };
 
           const inputToken = await getToken(token.chainId, token.address);
-          const tokenBalance = await getTokenBalance(
-            walletClient.account.address,
-            inputToken,
-          );
 
-          console.log('Token balance:', tokenBalance.amount.toString());
-          if (
-            parseInt(tokenBalance.amount.toString()) <
-            parseInt(fromAmountString)
-          ) {
-            console.error('Insufficient balance');
-            const res: IResponse = {
-              status: 'FAILED',
-              message: `Insufficient balance for ${SwapPayloadDTO.inputToken} to do this transaction. Please fund the account`,
-            };
-            return res;
+          // const tokenBalance = await getTokenBalance(
+          //   walletClient.account.address,
+          //   inputToken,
+          // );
+
+          const tokenBalance = await publicClient.readContract({
+            address: inputTokenAddress as Address,
+            abi: balanceOfABI,
+            functionName: 'balanceOf',
+            args: [walletClient.account.address.toLowerCase()],
+          });
+
+          console.log('Token balance:', parseFloat(formatUnits(tokenBalance as bigint, tokenDec)));
+          if (!tokenBalance || parseFloat(formatUnits(tokenBalance as bigint, tokenDec)) < parseFloat(SwapPayloadDTO.amount)) {
+            return response(
+              'FAILED',
+              `Insufficient balance. Your balance is ${formatUnits(tokenBalance as bigint, tokenDec)}. Please fund your account and try again.`,
+            );
           }
 
           // Check if fromAddress is not the zero address

@@ -2,7 +2,7 @@ import { IsString } from '@nestjs/class-validator';
 
 export class TransferDTO {
   @IsString()
-  recipient: string;
+  toAddress: string;
 
   @IsString()
   amount: string;
@@ -10,6 +10,5 @@ export class TransferDTO {
   @IsString()
   token: string;
 
-  @IsString()
-  projectType: string;
+  projectType: "Invoice" | "OTC" | "Seekers";
 }

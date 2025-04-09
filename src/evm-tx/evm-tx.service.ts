@@ -12,11 +12,12 @@ import {
   getStepTransaction,
   getStatus,
   getGasRecommendation,
-  getTokenBalance,
 } from '@lifi/sdk';
 import {
+  Address,
   encodeFunctionData,
   formatEther,
+  formatUnits,
   Hash,
   parseEther,
   parseUnits,
@@ -25,7 +26,7 @@ import {
   WalletClient,
   zeroAddress,
 } from 'viem';
-import { approvalABI, transferABI } from 'src/_common/helper/abi';
+import { approvalABI, balanceOfABI, transferABI } from 'src/_common/helper/abi';
 import { ConfigService } from '@nestjs/config';
 import { response } from 'src/_common/helper/response';
 import { PrivyConfig, ProjectType } from 'src/_common/service/privy.service';
@@ -139,15 +140,19 @@ export class EvmTxService {
         const inputToken = await getToken(fromChain.id, erc20TokenAddress);
         console.log('inputToken:', inputToken);
         console.log(walletClient.account.address, 'wallet address');
-        const tokenBalance = await getTokenBalance(
-          walletClient.account.address.toLowerCase(),
-          inputToken,
-        );
-        console.log('Token balance:', tokenBalance);
-        if (!tokenBalance || parseInt(tokenBalance.amount.toString()) < parseInt(transferAmount.toString())) {
+
+        const tokenBalance = await publicClient.readContract({
+          address: erc20TokenAddress as Address,
+          abi: balanceOfABI,
+          functionName: 'balanceOf',
+          args: [walletClient.account.address.toLowerCase()],
+        });
+
+        console.log('Token balance:', formatUnits(tokenBalance as bigint, tokenDecimals));
+        if (!tokenBalance || parseFloat(formatUnits(tokenBalance as bigint, tokenDecimals)) < parseFloat(TransferPayload.amount)) {
           return response(
             'FAILED',
-            `Insufficient balance. Your balance is ${tokenBalance ? formatEther(tokenBalance.amount) : '0'}. Please fund your account and try again.`,
+            `Insufficient balance. Your balance is ${formatUnits(tokenBalance as bigint, tokenDecimals)}. Please fund your account and try again.`,
           );
         }
         const encodedData = encodeFunctionData({
@@ -186,7 +191,7 @@ export class EvmTxService {
     } else {
       try {
         const ethValue = parseEther(TransferPayload.amount);
-        const value = parseInt(ethValue.toString());
+        const value = parseFloat(ethValue.toString());
 
         const nativeBalance = await publicClient.getBalance({
           address: walletClient.account.address,
@@ -246,6 +251,7 @@ export class EvmTxService {
     }
   }
 
+  //Check if user has enough token balance to perform the transaction
   async bridge(BridgePayloadDTO: BridgePayloadDTO, authToken: string) {
     console.log({ BridgePayloadDTO });
     this.privy = this.privyConfig.initializePrivyClient(BridgePayloadDTO.projectType as ProjectType);
