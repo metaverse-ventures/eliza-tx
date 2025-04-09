@@ -127,17 +127,20 @@ export class SwapService {
         '@solana/spl-token'
       );
       const inputTokenAccount = new PublicKey(inputTokenAddress);
-      const senderTokenATAData = await getAssociatedTokenAddress(
+      const senderInputTokenATAData = await getAssociatedTokenAddress(
         inputTokenAccount,
         senderPubKey,
       );
 
       console.log({ inputTokenAccount });
-      const [info, solBalance] = await Promise.all([
-        getAccount(this.connection, senderTokenATAData),
-        this.connection.getBalance(senderPubKey),
+      const [info, tokenBalance] = await Promise.all([
+        getAccount(this.connection, senderInputTokenATAData),
+        this.connection.getTokenAccountBalance(senderInputTokenATAData),
       ]);
-      console.log({ info: info.amount, solBalance });
+
+      const solBalance = await this.connection.getBalance(senderPubKey);
+      console.log({ info: info.amount, tokenBalance, solBalance });
+
       if (info.amount == null)
         return response(
           'FAILED',
@@ -161,6 +164,7 @@ export class SwapService {
           `Insufficient native SOL balance to proceed with the transaction. Please fund the account`,
         );
     }
+
     const routes = await getRoutes({
       fromChainId: solChainId,
       fromAmount: amountToSend,
