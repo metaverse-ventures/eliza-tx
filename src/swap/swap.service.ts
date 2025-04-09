@@ -391,8 +391,8 @@ export class SwapService {
             args: [walletClient.account.address.toLowerCase()],
           });
 
-          console.log('Token balance:', formatUnits(tokenBalance as bigint, tokenDec));
-          if (!tokenBalance || parseInt(formatUnits(tokenBalance as bigint, tokenDec)) < parseInt(fromAmountString)) {
+          console.log('Token balance:', parseFloat(formatUnits(tokenBalance as bigint, tokenDec)));
+          if (!tokenBalance || parseFloat(formatUnits(tokenBalance as bigint, tokenDec)) < parseInt(fromAmountString)) {
             return response(
               'FAILED',
               `Insufficient balance. Your balance is ${formatUnits(tokenBalance as bigint, tokenDec)}. Please fund your account and try again.`,

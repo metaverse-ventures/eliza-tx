@@ -149,7 +149,7 @@ export class EvmTxService {
         });
 
         console.log('Token balance:', formatUnits(tokenBalance as bigint, tokenDecimals));
-        if (!tokenBalance || parseInt(formatUnits(tokenBalance as bigint, tokenDecimals)) < parseInt(transferAmount.toString())) {
+        if (!tokenBalance || parseFloat(formatUnits(tokenBalance as bigint, tokenDecimals)) < parseFloat(transferAmount.toString())) {
           return response(
             'FAILED',
             `Insufficient balance. Your balance is ${formatUnits(tokenBalance as bigint, tokenDecimals)}. Please fund your account and try again.`,
@@ -191,7 +191,7 @@ export class EvmTxService {
     } else {
       try {
         const ethValue = parseEther(TransferPayload.amount);
-        const value = parseInt(ethValue.toString());
+        const value = parseFloat(ethValue.toString());
 
         const nativeBalance = await publicClient.getBalance({
           address: walletClient.account.address,
