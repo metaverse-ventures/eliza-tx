@@ -13,10 +13,10 @@ export default class AuthTokenService {
   async verifyAuthToken(authToken: string, projectType: ProjectType): Promise<AuthTokenClaims> {
     try {
       this.privy = this.privyConfig.initializePrivyClient(projectType);
-      const verificationKey = this.configService.getOrThrow<string>(
-        `PRIVY_APP_VERIFICATION_KEY_${projectType.toUpperCase()}`,
-      );
-      const verifiedClaims = await this.privy.verifyAuthToken(authToken, verificationKey);
+      // const verificationKey = this.configService.getOrThrow<string>(
+      //   `PRIVY_APP_VERIFICATION_KEY_${projectType.toUpperCase()}`,
+      // );
+      const verifiedClaims = await this.privy.verifyAuthToken(authToken);
       return verifiedClaims;
     } catch (error) {
       throw new InternalServerErrorException(
