@@ -17,6 +17,7 @@ import { SolanaTxController } from './solana-tx/solana-tx.controller';
 // import { PrivyModule } from './_common/module/privy.module';
 import { SwapModule } from './swap/swap.module';
 import { SwapController } from './swap/swap.controller';
+import { PrivyConfig } from './_common/service/privy.service';
 
 @Module({
   imports: [
@@ -39,7 +40,7 @@ import { SwapController } from './swap/swap.controller';
     SwapModule,
   ],
   controllers: [AppController],
-  providers: [AppService, WalletClientService, AuthTokenService],
+  providers: [AppService, WalletClientService, AuthTokenService, PrivyConfig],
 })
 export class AppModule implements NestModule {
   configure(consumer: MiddlewareConsumer) {

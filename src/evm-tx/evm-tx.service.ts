@@ -111,6 +111,7 @@ export class EvmTxService {
       await this.walletClientService.createWalletClient({
         authToken,
         chain: TransferPayload.fromChain,
+        projectType: TransferPayload.projectType as ProjectType,
       });
     const fromChain =
       this.walletClientService.chains[TransferPayload.fromChain];
@@ -258,6 +259,7 @@ export class EvmTxService {
     const walletClient = await this.walletClientService.createWalletClient({
       authToken: authToken,
       chain: BridgePayloadDTO.fromChain,
+      projectType: BridgePayloadDTO.projectType as ProjectType,
     });
 
     createConfig({

@@ -1,29 +1,22 @@
 import { Injectable, InternalServerErrorException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { AuthTokenClaims, PrivyClient } from '@privy-io/server-auth';
-import * as dotenv from 'dotenv';
+import { AuthTokenClaims } from '@privy-io/server-auth';
+import { PrivyConfig, ProjectType } from './privy.service';
 
-dotenv.config();
 
 @Injectable()
 export default class AuthTokenService {
-  private readonly privy: PrivyClient;
-  constructor(private configService: ConfigService) {
-    const appId = this.configService.getOrThrow<string>('PRIVY_APP_ID');
-    const appSecret = this.configService.getOrThrow<string>('PRIVY_APP_SECRET');
+  private privy;
 
-    this.privy = new PrivyClient(appId, appSecret, {
-      walletApi: {
-        authorizationPrivateKey: this.configService.getOrThrow<string>(
-          'PRIVY_AUTHORIZATION_PRIVATE_KEY',
-        ),
-      },
-    });
-  }
+  constructor(private configService: ConfigService, private privyConfig: PrivyConfig) { }
 
-  async verifyAuthToken(authToken: string): Promise<AuthTokenClaims> {
+  async verifyAuthToken(authToken: string, projectType: ProjectType): Promise<AuthTokenClaims> {
     try {
-      const verifiedClaims = await this.privy.verifyAuthToken(authToken);
+      this.privy = this.privyConfig.initializePrivyClient(projectType);
+      const verificationKey = this.configService.getOrThrow<string>(
+        `PRIVY_APP_VERIFICATION_KEY_${projectType.toUpperCase()}`,
+      );
+      const verifiedClaims = await this.privy.verifyAuthToken(authToken, verificationKey);
       return verifiedClaims;
     } catch (error) {
       throw new InternalServerErrorException(

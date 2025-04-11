@@ -22,12 +22,13 @@ import { SupportedChain } from '../utils/types';
 import * as crypto from 'crypto';
 import { RedisService } from '@liaoliaots/nestjs-redis';
 import { Redis } from 'ioredis';
+import { PrivyConfig, ProjectType } from './privy.service';
 
 dotenv.config();
 
 @Injectable()
 export default class WalletClientService {
-  private readonly privy: PrivyClient;
+  private privy: PrivyClient;
   private readonly redisClient: Redis;
 
   chains: Record<string, Chain> = {
@@ -73,24 +74,16 @@ export default class WalletClientService {
     private authTokenService: AuthTokenService,
     private redisService: RedisService,
     private configService: ConfigService,
+    private privyConfig: PrivyConfig,
   ) {
     this.redisClient = this.redisService.getOrThrow();
-
-    const appId = this.configService.getOrThrow<string>('PRIVY_APP_ID');
-    const appSecret = this.configService.getOrThrow<string>('PRIVY_APP_SECRET');
-
-    this.privy = new PrivyClient(appId, appSecret, {
-      walletApi: {
-        authorizationPrivateKey: this.configService.getOrThrow<string>(
-          'PRIVY_AUTHORIZATION_PRIVATE_KEY',
-        ),
-      },
-    });
   }
 
-  async verifyAndGetSolAddress(authToken: string) {
+  async verifyAndGetSolAddress(authToken: string, projectType: ProjectType) {
     const verifiedAuthToken =
-      await this.authTokenService.verifyAuthToken(authToken);
+      await this.authTokenService.verifyAuthToken(authToken, projectType);
+      this.privy = await this.privyConfig.initializePrivyClient(projectType);
+
     // const user: User = await this.privy.getUserById(verifiedAuthToken.userId);
     const user: any = await this.privy.getUserById(verifiedAuthToken.userId);
 
@@ -110,13 +103,14 @@ export default class WalletClientService {
     return privySolanaAddress;
   }
 
-  async createLocalAccount(authToken: string): Promise<Account> {
+  async createLocalAccount(authToken: string, projectType: ProjectType): Promise<Account> {
     try {
       const verifiedAuthToken =
-        await this.authTokenService.verifyAuthToken(authToken);
+        await this.authTokenService.verifyAuthToken(authToken, projectType);
       if (!verifiedAuthToken) {
         throw new Error('User is not verified.');
       }
+      this.privy = this.privyConfig.initializePrivyClient(projectType);
 
       const user: any = await this.privy.getUserById(verifiedAuthToken.userId);
       const privyEthereumAccount = user.linkedAccounts.find(
@@ -186,12 +180,17 @@ export default class WalletClientService {
     authToken,
     chain,
     chainId,
+    projectType,
   }: {
     authToken: string;
     chain?: SupportedChain;
     chainId?: number;
+    projectType: ProjectType;
   }): Promise<WalletClient> {
     try {
+
+      this.privy = this.privyConfig.initializePrivyClient(projectType);
+
       const hashedAuthToken = this.hashAuthToken(authToken);
       const cacheKey = `walletClient:${hashedAuthToken}`;
       const cachedData = await this.redisClient.get(cacheKey);
@@ -202,7 +201,7 @@ export default class WalletClientService {
         userId = data.userId;
       } else {
         const verifiedAuthToken =
-          await this.authTokenService.verifyAuthToken(authToken);
+          await this.authTokenService.verifyAuthToken(authToken, projectType);
 
         if (!verifiedAuthToken) {
           throw new UnauthorizedException('User is not verified.');

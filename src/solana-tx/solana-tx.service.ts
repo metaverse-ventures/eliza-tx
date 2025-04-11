@@ -65,7 +65,7 @@ export class SolanaTxService {
       { blockhash, lastValidBlockHeight },
       { tokenAddress: inputTokenAddress, tokenDec },
     ] = await Promise.all([
-      this.walletClientService.verifyAndGetSolAddress(authToken),
+      this.walletClientService.verifyAndGetSolAddress(authToken, transferDTO.projectType),
       this.connection.getLatestBlockhash(),
       this.getTokenAddressAndDecimal(transferDTO.token, solChainId),
     ]);
