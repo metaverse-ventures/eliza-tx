@@ -76,10 +76,10 @@ export class SwapService {
       (swapDTO.chain.toLowerCase() as string) == 'sol' ||
       (swapDTO.chain.toLowerCase() as string) == 'solana'
     ) {
-      return this.swapSol(swapDTO, authToken);
+      return this.swapSol(swapDTO, authToken, swapDTO.projectType);
     }
     if (supportEVMSwapChains.includes(swapDTO.chain.toLowerCase() as string)) {
-      return this.evmSwap(swapDTO, authToken);
+      return this.evmSwap(swapDTO, authToken, swapDTO.projectType);
     }
     return response(
       'FAILED',
@@ -88,7 +88,7 @@ export class SwapService {
   }
 
   //TODO: check the balance of the sender account
-  private async swapSol(swapDTO: SwapPayloadDTO, authToken: string) {
+  private async swapSol(swapDTO: SwapPayloadDTO, authToken: string, project: ProjectType) {
     console.log('swapDTO', swapDTO);
     this.privy = this.privyConfig.initializePrivyClient(
       swapDTO.projectType as ProjectType,
@@ -101,7 +101,7 @@ export class SwapService {
       { tokenAddress: inputTokenAddress, tokenDec },
       { tokenAddress: outputTokenAddress },
     ] = await Promise.all([
-      this.walletClientService.verifyAndGetSolAddress(authToken),
+      this.walletClientService.verifyAndGetSolAddress(authToken, project),
       this.getTokenAddressAndDecimal(
         swapDTO.inputToken.toUpperCase(),
         solChainId,
@@ -274,14 +274,16 @@ export class SwapService {
     return res;
   }
 
-  private async evmSwap(SwapPayloadDTO: SwapPayloadDTO, authToken: string) {
-    try {
+  private async evmSwap(SwapPayloadDTO: SwapPayloadDTO, authToken: string, projectType: ProjectType) {
+    try { 
       const chainId =
         await this.walletClientService.chains[SwapPayloadDTO.chain].id;
       const walletClient: WalletClient =
         await this.walletClientService.createWalletClient({
           authToken,
           chain: SwapPayloadDTO.chain,
+          chainId,
+          projectType,
         });
 
       const publicClient =
